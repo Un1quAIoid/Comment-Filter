@@ -1,0 +1,17 @@
+{
+    "manifest_version": 3,
+    "name": "Un1quAI Comment Filter",
+    "version": "1.0",
+    "description": "用LLM筛选网页评论",
+    "permissions": ["storage"],
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_icon": "assets/icon.png"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content/content.js"]
+        }
+    ]
+}
