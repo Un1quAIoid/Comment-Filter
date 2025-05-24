@@ -1,13 +1,363 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>评论筛选设置</title>
-  </head>
-  <body>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>评论筛选设置</title>
+  <style>
+    body {
+      font-family: "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      margin: 16px;
+      color: #333;
+      background-color: #fefefe;
+    }
+    .hidden {
+      display: none;
+    }
+    h3 {
+      margin-top: 0;
+      color: #111;
+      font-size: 20px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+    }
+    #disclaimerContainer {
+      border: 1px solid #d1d5db;
+      padding: 12px;
+      border-radius: 8px;
+      background-color: #f9fafb;
+      margin-bottom: 16px;
+    }
+    button {
+      cursor: pointer;
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: none;
+      background-color: #3b82f6;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #2563eb;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+      margin-top: 12px;
+    }
+    .section {
+      margin-bottom: 24px;
+      padding: 12px;
+      background-color: #f9fafb;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    /* 平台列表 */
+    #platforms {
+      background-color: #f0f4ff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .platform-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .platform-row label {
+      flex-grow: 1;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    /* 平台按钮样式增强 */
+    .btn-custom-toggle {
+      font-size: 0.85rem;
+      background-color: #e0ecff;
+      border: 1px solid #93c5fd;
+      color: #1d4ed8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: background-color 0.2s ease;
+    }
+    .btn-custom-toggle:hover {
+      background-color: #bfdbfe;
+    }
+    /* 平台自定义设置区域 */
+    .platform-custom-settings {
+      background-color: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-top: 6px;
+
+      max-height: 0;             /* 折叠时高度为0 */
+      overflow: hidden;          /* 隐藏溢出内容 */
+      transition: max-height 0.3s ease, padding 0.3s ease; /* 动画 */
+      padding-top: 0;            /* 折叠时去掉内边距 */
+      padding-bottom: 0;
+    }
+
+    .platform-custom-settings.visible {
+      max-height: 400px;         /* 展开时最大高度，根据内容调整 */
+      padding-top: 10px;         /* 展开时恢复内边距 */
+      padding-bottom: 14px;
+    }
+
+    .keyword-input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .keyword-input-group input[type="text"] {
+      flex-grow: 1;
+      padding: 6px 8px;
+      font-size: 14px;
+      border: 1px solid #94a3b8;
+      border-radius: 4px;
+    }
+    .keyword-input-group button {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      background-color: #3b82f6;
+      color: white;
+      border-radius: 6px;
+      border: none;
+      box-shadow: 0 2px 6px rgb(59 130 246 / 0.4);
+    }
+    .keyword-input-group button:hover {
+      background-color: #2563eb;
+    }
+    .keywords-list {
+      margin-bottom: 10px;
+    }
+    .keyword-item {
+      background-color: #dbeafe;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      margin-right: 6px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .keyword-item button {
+      margin-left: 8px;
+      background-color: white;    /* 改成白色背景 */
+      border-radius: 4px;         /* 改成方形，轻微圆角4px */
+      border: 1px solid #ccc;     /* 加个浅灰边框，视觉更清晰 */
+      color: #ef4444;             /* 文字默认是红色 */
+      width: 20px;
+      height: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: none;           /* 取消阴影 */
+      transition: background-color 0.2s ease, color 0.2s ease; /* 动画 */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .keyword-item button:hover {
+      background-color: #ef4444;  /* 悬停变红底 */
+      color: white;               /* 文字变白 */
+      border-color: #ef4444;      /* 边框和背景统一红色 */
+    }
+    /* 滑块 */
+    input[type="range"] {
+      width: 160px;
+      vertical-align: middle;
+    }
+    .range-value {
+      display: inline-block;
+      width: 25px;
+      text-align: center;
+      font-weight: 600;
+      color: #444;
+      user-select: none;
+    }
+    /* 高级设置 */
+    #advanced {
+      border: 1px solid #cbd5e1;
+      padding: 12px;
+      border-radius: 8px;
+      background-color: #f3f4f6;
+      margin-top: 12px;
+    }
+    #toggleAdvanced {
+      background-color: #2563eb;
+      margin-bottom: 6px;
+    }
+    #disclaimerContainer {
+      max-width: 480px;    /* 最大宽度稍小 */
+      min-width: 320px;    /* 最小宽度稍小 */
+      padding: 24px 30px;  /* 内边距适中 */
+      border-radius: 10px;
+      background-color: #f9fafb;
+      border: 1px solid #d1d5db;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      font-size: 16px;      
+      color: #111;
+      margin: 30px auto;
+    }
+
+    #disclaimerContainer h3 {
+      font-size: 24px;
+      margin-bottom: 14px;
+    }
+
+    #disclaimerContainer p {
+      font-size: 16px;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    #disclaimerContainer button {
+      font-size: 15px;
+      padding: 8px 24px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 免责声明 -->
+  <div id="disclaimerOverlay">
+    <div id="disclaimerContainer">
+      <h3>免责声明</h3>
+      <p>此插件需要扫描页面信息以实现评论筛选功能。使用插件即视为同意此类操作。</p>
+      <button id="agreeBtn">我已阅读并同意</button>
+    </div>
+  </div>
+
+  <!-- 主设置区，默认隐藏 -->
+  <div id="mainContainer" class="hidden">
     <h3>评论筛选设置</h3>
-    <input type="text" id="apiKey" placeholder="请输入你的API Key" />
-    <button id="saveBtn">保存</button>
-    <script src="popup.js"></script>
-  </body>
+
+    <!-- 启用平台 -->
+    <div class="section">
+      <label>选择启用平台：</label>
+      <div id="platforms">
+        <div class="platform-row">
+          <label><input type="checkbox" value="bilibili" /> B站</label>
+          <button class="btn-custom-toggle" data-platform="bilibili">自定义设置</button>
+        </div>
+        <div class="platform-custom-settings" id="custom-bilibili">
+          <label>屏蔽关键词（B站专属）</label>
+          <div class="keyword-input-group">
+            <input type="text" class="custom-keyword-input" placeholder="输入关键词后点击添加" />
+            <button class="add-custom-keyword">添加</button>
+          </div>
+          <div class="keywords-list custom-keywords-list"></div>
+          <label>筛选强度（0-10） <input type="range" min="0" max="10" value="5" class="custom-strength" /><span class="range-value">5</span></label>
+        </div>
+
+        <div class="platform-row">
+          <label><input type="checkbox" value="zhihu" /> 知乎</label>
+          <button class="btn-custom-toggle" data-platform="zhihu">自定义设置</button>
+        </div>
+        <div class="platform-custom-settings" id="custom-zhihu">
+          <label>屏蔽关键词（知乎专属）</label>
+          <div class="keyword-input-group">
+            <input type="text" class="custom-keyword-input" placeholder="输入关键词后点击添加" />
+            <button class="add-custom-keyword">添加</button>
+          </div>
+          <div class="keywords-list custom-keywords-list"></div>
+          <label>筛选强度（0-10） <input type="range" min="0" max="10" value="5" class="custom-strength" /><span class="range-value">5</span></label>
+        </div>
+
+        <div class="platform-row">
+          <label><input type="checkbox" value="tieba" /> 贴吧</label>
+          <button class="btn-custom-toggle" data-platform="tieba">自定义设置</button>
+        </div>
+        <div class="platform-custom-settings" id="custom-tieba">
+          <label>屏蔽关键词（贴吧专属）</label>
+          <div class="keyword-input-group">
+            <input type="text" class="custom-keyword-input" placeholder="输入关键词后点击添加" />
+            <button class="add-custom-keyword">添加</button>
+          </div>
+          <div class="keywords-list custom-keywords-list"></div>
+          <label>筛选强度（0-10） <input type="range" min="0" max="10" value="5" class="custom-strength" /><span class="range-value">5</span></label>
+        </div>
+
+        <div class="platform-row">
+          <label><input type="checkbox" value="weibo" /> 微博</label>
+          <button class="btn-custom-toggle" data-platform="weibo">自定义设置</button>
+        </div>
+        <div class="platform-custom-settings" id="custom-weibo">
+          <label>屏蔽关键词（微博专属）</label>
+          <div class="keyword-input-group">
+            <input type="text" class="custom-keyword-input" placeholder="输入关键词后点击添加" />
+            <button class="add-custom-keyword">添加</button>
+          </div>
+          <div class="keywords-list custom-keywords-list"></div>
+          <label>筛选强度（0-10） <input type="range" min="0" max="10" value="5" class="custom-strength" /><span class="range-value">5</span></label>
+        </div>
+
+        <div class="platform-row">
+          <label><input type="checkbox" value="xiaohongshu" /> 小红书</label>
+          <button class="btn-custom-toggle" data-platform="xiaohongshu">自定义设置</button>
+        </div>
+        <div class="platform-custom-settings" id="custom-xiaohongshu">
+          <label>屏蔽关键词（小红书专属）</label>
+          <div class="keyword-input-group">
+            <input type="text" class="custom-keyword-input" placeholder="输入关键词后点击添加" />
+            <button class="add-custom-keyword">添加</button>
+          </div>
+          <div class="keywords-list custom-keywords-list"></div>
+          <label>筛选强度（0-10） <input type="range" min="0" max="10" value="5" class="custom-strength" /><span class="range-value">5</span></label>
+        </div>
+
+        <div class="platform-row">
+          <label><input type="checkbox" value="netease" /> 网易云音乐</label>
+          <button class="btn-custom-toggle" data-platform="netease">自定义设置</button>
+        </div>
+        <div class="platform-custom-settings" id="custom-netease">
+          <label>屏蔽关键词（网易云音乐专属）</label>
+          <div class="keyword-input-group">
+            <input type="text" class="custom-keyword-input" placeholder="输入关键词后点击添加" />
+            <button class="add-custom-keyword">添加</button>
+          </div>
+          <div class="keywords-list custom-keywords-list"></div>
+          <label>筛选强度（0-10） <input type="range" min="0" max="10" value="5" class="custom-strength" /><span class="range-value">5</span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 全局设置 -->
+    <div class="section" id="globalSettings">
+      <label for="globalStrength">全局筛选强度（0-10）</label>
+      <input type="range" min="0" max="10" value="5" id="globalStrength" />
+      <span id="globalStrengthValue" class="range-value">5</span>
+
+      <label>全局屏蔽关键词</label>
+      <div class="keyword-input-group">
+        <input type="text" id="globalKeywordInput" placeholder="输入关键词后点击添加" />
+        <button id="addGlobalKeywordBtn">添加</button>
+      </div>
+      <div id="globalKeywordsList" class="keywords-list"></div>
+    </div>
+
+    <!-- 高级设置 -->
+    <div class="section" id="advancedSection" class="hidden" style="display:none;">
+      <label for="apiKeyInput">API Key（高级设置）</label>
+      <input type="text" id="apiKeyInput" placeholder="请输入 API Key" style="width: 100%; padding: 6px; box-sizing: border-box;"/>
+    </div>
+
+    <button id="toggleAdvanced">显示高级设置</button>
+
+    <div style="margin-top: 18px;">
+      <button id="saveBtn" style="width: 100%;">保存设置</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
 </html>
