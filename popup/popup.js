@@ -1,200 +1,328 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const disclaimerOverlay = document.getElementById("disclaimerOverlay");
-  const agreeBtn = document.getElementById("agreeBtn");
-  const mainContainer = document.getElementById("mainContainer");
+(() => {
+  const STORAGE_KEY = 'commentFilterSettings';
 
-  // 点击免责声明同意按钮
-  agreeBtn.addEventListener("click", () => {
-    disclaimerOverlay.style.display = "none";
-    mainContainer.classList.remove("hidden");
-    // 记录用户同意，避免下次弹出
-    localStorage.setItem("disclaimerAgreed", "true");
-  });
+  const disclaimerOverlay = document.getElementById('disclaimerOverlay');
+  const agreeBtn = document.getElementById('agreeBtn');
+  const mainContainer = document.getElementById('mainContainer');
 
-  // 如果之前已经同意，直接显示主设置区
-  if (localStorage.getItem("disclaimerAgreed") === "true") {
-    disclaimerOverlay.style.display = "none";
-    mainContainer.classList.remove("hidden");
+  // Toggle platform content
+  function toggleSection(header, content, icon) {
+    const expanded = content.classList.toggle('expanded');
+    icon.classList.toggle('expanded', expanded);
+    header.setAttribute('aria-expanded', expanded);
+    content.setAttribute('aria-hidden', !expanded);
   }
 
-  // 1. 初始化时，确保所有平台自定义设置都隐藏
-  document.querySelectorAll(".platform-custom-settings").forEach(el => {
-    el.classList.remove("visible");
-  });
+  // Create prompt item element
+  function createPromptItem(text, value, onChange, onRemove) {
+    const container = document.createElement('div');
+    container.className = 'prompt-item';
 
-  // 2. 点击“自定义设置”按钮，切换显示状态
-  document.querySelectorAll(".btn-custom-toggle").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const platform = btn.dataset.platform;
-      const settingEl = document.getElementById(`custom-${platform}`);
-      if (settingEl) {
-        settingEl.classList.toggle("visible");
-      }
-    });
-  });
+    const promptText = document.createElement('div');
+    promptText.className = 'prompt-text';
+    promptText.textContent = text;
+    container.appendChild(promptText);
 
-  // 辅助函数：创建关键词标签
-  function createKeywordItem(text) {
-    const span = document.createElement("span");
-    span.className = "keyword-item";
-    span.textContent = text;
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "×";
-    delBtn.title = "删除关键词";
-    delBtn.addEventListener("click", () => {
-      span.remove();
+    const inputRange = document.createElement('input');
+    inputRange.type = 'range';
+    inputRange.min = '0';
+    inputRange.max = '10';
+    inputRange.value = value ?? 5;
+    inputRange.className = 'prompt-range';
+    container.appendChild(inputRange);
+
+    const rangeValue = document.createElement('span');
+    rangeValue.className = 'range-value';
+    rangeValue.textContent = inputRange.value;
+    container.appendChild(rangeValue);
+
+    inputRange.addEventListener('input', () => {
+      rangeValue.textContent = inputRange.value;
+      onChange && onChange(inputRange.value);
     });
-    span.appendChild(delBtn);
-    return span;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'prompt-remove-btn';
+    removeBtn.title = '删除该prompt';
+    removeBtn.textContent = '×';
+    container.appendChild(removeBtn);
+
+    removeBtn.addEventListener('click', () => {
+      onRemove && onRemove();
+      container.remove();
+    });
+
+    return { container, inputRange };
   }
 
-  // 自定义关键词添加
-  document.querySelectorAll(".add-custom-keyword").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const container = btn.closest(".platform-custom-settings");
-      const input = container.querySelector(".custom-keyword-input");
-      const keywordsList = container.querySelector(".custom-keywords-list");
-      const val = input.value.trim();
-      if (val) {
-        const item = createKeywordItem(val);
-        keywordsList.appendChild(item);
-        input.value = "";
-      }
-    });
-  });
-
-  // 全局关键词添加
-  const addGlobalKeywordBtn = document.getElementById("addGlobalKeywordBtn");
-  const globalKeywordInput = document.getElementById("globalKeywordInput");
-  const globalKeywordsList = document.getElementById("globalKeywordsList");
-
-  addGlobalKeywordBtn.addEventListener("click", () => {
-    const val = globalKeywordInput.value.trim();
-    if (val) {
-      const item = createKeywordItem(val);
-      globalKeywordsList.appendChild(item);
-      globalKeywordInput.value = "";
+  // Render prompt list inside container
+  function renderPromptList(container, prompts, onChangeStrength, onRemovePrompt) {
+    container.innerHTML = '';
+    for (const p of prompts) {
+      const { container: el, inputRange } = createPromptItem(
+        p.text,
+        p.strength ?? 5,
+        (val) => {
+          p.strength = Number(val);
+          onChangeStrength && onChangeStrength();
+        },
+        () => {
+          prompts.splice(prompts.indexOf(p), 1);
+          renderPromptList(container, prompts, onChangeStrength, onRemovePrompt);
+        }
+      );
+      container.appendChild(el);
     }
-  });
-
-  // 滑块联动显示值
-  function bindRangeValue(rangeInput) {
-    const span = rangeInput.nextElementSibling;
-    if (!span) return;
-    span.textContent = rangeInput.value;
-    rangeInput.addEventListener("input", () => {
-      span.textContent = rangeInput.value;
-    });
   }
 
-  document.querySelectorAll("input[type=range]").forEach(bindRangeValue);
-
-  // 高级设置切换
-  const toggleAdvancedBtn = document.getElementById("toggleAdvanced");
-  const advancedSection = document.getElementById("advancedSection");
-
-  toggleAdvancedBtn.addEventListener("click", () => {
-    if (advancedSection.style.display === "none" || advancedSection.style.display === "") {
-      advancedSection.style.display = "block";
-      toggleAdvancedBtn.textContent = "隐藏高级设置";
-    } else {
-      advancedSection.style.display = "none";
-      toggleAdvancedBtn.textContent = "显示高级设置";
-    }
-  });
-
-  // 保存数据到 localStorage
-  const saveBtn = document.getElementById("saveBtn");
-  saveBtn.addEventListener("click", () => {
-    const data = {};
-
-    // 选中平台及自定义设置
-    data.platforms = {};
-    document.querySelectorAll("#platforms .platform-row").forEach(row => {
-      const checkbox = row.querySelector("input[type=checkbox]");
-      const platform = checkbox.value;
-      if (checkbox.checked) {
-        const settingsDiv = document.getElementById(`custom-${platform}`);
-        // 关键词
-        const keywords = Array.from(settingsDiv.querySelectorAll(".keyword-item"))
-          .map(item => item.firstChild.textContent);
-        // 筛选强度
-        const strength = settingsDiv.querySelector(".custom-strength").value;
-        data.platforms[platform] = {
-          enabled: true,
-          keywords,
-          strength: Number(strength),
-        };
-      } else {
-        data.platforms[platform] = { enabled: false };
+  // Save all settings to localStorage
+  function saveSettings() {
+    const data = {
+      agreed: true,
+      global: {
+        enabled: true,
+        prompts,
+        strength: Number(globalStrength.value),
+        presets: getPresetCheckboxValues(globalPresetFilters),
+      },
+      bilibili: {
+        enabled: enableBilibili.checked,
+        prompts: bilibiliPrompts,
+        presets: getPresetCheckboxValues(bilibiliPresetFilters),
+      },
+      zhihu: {
+        enabled: enableZhihu.checked,
+        prompts: zhihuPrompts,
+        presets: getPresetCheckboxValues(zhihuPresetFilters),
+      },
+      advanced: {
+        apiKey: apiKeyInput.value.trim(),
       }
-    });
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    alert('设置已保存');
+  }
 
-    // 全局设置
-    data.globalStrength = Number(document.getElementById("globalStrength").value);
-    data.globalKeywords = Array.from(globalKeywordsList.querySelectorAll(".keyword-item"))
-      .map(item => item.firstChild.textContent);
-
-    // API Key
-    data.apiKey = document.getElementById("apiKeyInput").value.trim();
-
-    // 保存
-    localStorage.setItem("commentFilterSettings", JSON.stringify(data));
-    alert("设置已保存！");
-  });
-
-  // 页面加载时恢复设置
+  // Load settings from localStorage
   function loadSettings() {
-    const saved = localStorage.getItem("commentFilterSettings");
-    if (!saved) return;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
     try {
-      const data = JSON.parse(saved);
-      // 平台设置
-      for (const [platform, config] of Object.entries(data.platforms || {})) {
-        const checkbox = document.querySelector(`#platforms input[value=${platform}]`);
-        const settingsDiv = document.getElementById(`custom-${platform}`);
-        if (!checkbox) continue;
-        checkbox.checked = !!config.enabled;
-
-        // 清空旧关键词
-        const keywordsList = settingsDiv.querySelector(".custom-keywords-list");
-        keywordsList.innerHTML = "";
-        if (config.keywords && config.keywords.length) {
-          for (const kw of config.keywords) {
-            keywordsList.appendChild(createKeywordItem(kw));
-          }
-        }
-        if (config.strength !== undefined) {
-          const range = settingsDiv.querySelector(".custom-strength");
-          range.value = config.strength;
-          bindRangeValue(range);
-        }
-
-        // 无论是否勾选，初始化时都折叠个性化设置
-        settingsDiv.classList.remove("visible");
-      }
-
-      // 全局筛选强度和关键词
-      if (data.globalStrength !== undefined) {
-        const globalRange = document.getElementById("globalStrength");
-        globalRange.value = data.globalStrength;
-        bindRangeValue(globalRange);
-      }
-      globalKeywordsList.innerHTML = "";
-      if (data.globalKeywords && data.globalKeywords.length) {
-        for (const kw of data.globalKeywords) {
-          globalKeywordsList.appendChild(createKeywordItem(kw));
-        }
-      }
-
-      // API Key
-      if (data.apiKey !== undefined) {
-        document.getElementById("apiKeyInput").value = data.apiKey;
-      }
-    } catch (e) {
-      console.warn("读取设置失败:", e);
+      return JSON.parse(raw);
+    } catch {
+      return null;
     }
   }
 
-  loadSettings();
-});
+  // Helper to get preset checkboxes checked values (array)
+  function getPresetCheckboxValues(container) {
+    return Array.from(container.querySelectorAll('input[type=checkbox]'))
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+  }
+
+  // Set preset checkbox states
+  function setPresetCheckboxValues(container, values = []) {
+    container.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.checked = values.includes(cb.value);
+    });
+  }
+
+  // Create prompt data from string array
+  function promptsFromStrings(arr = []) {
+    return arr.map(text => ({ text, strength: 5 }));
+  }
+
+  // Global variables for prompts
+  let prompts = [];
+  let bilibiliPrompts = [];
+  let zhihuPrompts = [];
+
+  // Get UI elements
+  const globalPromptInput = document.getElementById('globalPromptInput');
+  const addGlobalPromptBtn = document.getElementById('addGlobalPromptBtn');
+  const globalPromptsList = document.getElementById('globalPromptsList');
+  const globalStrength = document.getElementById('globalStrength');
+  const globalStrengthValue = document.getElementById('globalStrengthValue');
+  const globalPresetFilters = document.getElementById('globalPresetFilters');
+
+  const enableBilibili = document.getElementById('enableBilibili');
+  const bilibiliPromptInput = document.getElementById('bilibiliPromptInput');
+  const addBilibiliPromptBtn = document.getElementById('addBilibiliPromptBtn');
+  const bilibiliPromptsList = document.getElementById('bilibiliPromptsList');
+  const bilibiliPresetFilters = document.getElementById('bilibiliPresetFilters');
+
+  const enableZhihu = document.getElementById('enableZhihu');
+  const zhihuPromptInput = document.getElementById('zhihuPromptInput');
+  const addZhihuPromptBtn = document.getElementById('addZhihuPromptBtn');
+  const zhihuPromptsList = document.getElementById('zhihuPromptsList');
+  const zhihuPresetFilters = document.getElementById('zhihuPresetFilters');
+
+  const apiKeyInput = document.getElementById('apiKeyInput');
+
+  const toggleAdvancedBtn = document.getElementById('toggleAdvanced');
+  const advancedSection = document.getElementById('advancedSection');
+
+  const saveBtn = document.getElementById('saveBtn');
+
+  // Platform toggles
+  const bilibiliBlock = document.getElementById('bilibiliBlock');
+  const bilibiliHeader = bilibiliBlock.querySelector('.platform-header');
+  const bilibiliContent = document.getElementById('bilibiliContent');
+  const bilibiliToggleIcon = document.getElementById('bilibiliToggle');
+
+  const zhihuBlock = document.getElementById('zhihuBlock');
+  const zhihuHeader = zhihuBlock.querySelector('.platform-header');
+  const zhihuContent = document.getElementById('zhihuContent');
+  const zhihuToggleIcon = document.getElementById('zhihuToggle');
+
+  // Disclaimer agree button
+  agreeBtn.addEventListener('click', () => {
+    disclaimerOverlay.style.display = 'none';
+    mainContainer.classList.remove('hidden');
+    loadAllSettings();
+  });
+
+  // Range value update handlers
+  globalStrength.addEventListener('input', () => {
+    globalStrengthValue.textContent = globalStrength.value;
+  });
+
+  // Toggle advanced section
+  toggleAdvancedBtn.addEventListener('click', () => {
+    const expanded = advancedSection.classList.toggle('visible');
+    advancedSection.setAttribute('aria-expanded', expanded);
+    advancedSection.setAttribute('aria-hidden', !expanded);
+    toggleAdvancedBtn.textContent = expanded ? '隐藏高级设置' : '显示高级设置';
+  });
+
+  // Platform toggle handlers
+  bilibiliHeader.addEventListener('click', () => {
+    const expanded = bilibiliContent.classList.toggle('expanded');
+    bilibiliToggleIcon.classList.toggle('expanded', expanded);
+    bilibiliHeader.setAttribute('aria-expanded', expanded);
+    bilibiliContent.setAttribute('aria-hidden', !expanded);
+  });
+  bilibiliHeader.addEventListener('keydown', e => {
+    if(e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      bilibiliHeader.click();
+    }
+  });
+
+  zhihuHeader.addEventListener('click', () => {
+    const expanded = zhihuContent.classList.toggle('expanded');
+    zhihuToggleIcon.classList.toggle('expanded', expanded);
+    zhihuHeader.setAttribute('aria-expanded', expanded);
+    zhihuContent.setAttribute('aria-hidden', !expanded);
+  });
+  zhihuHeader.addEventListener('keydown', e => {
+    if(e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      zhihuHeader.click();
+    }
+  });
+
+  // Add prompt button handlers
+  addGlobalPromptBtn.addEventListener('click', () => {
+    const val = globalPromptInput.value.trim();
+    if(val) {
+      prompts.push({ text: val, strength: 5 });
+      globalPromptInput.value = '';
+      renderPromptList(globalPromptsList, prompts);
+    }
+  });
+
+  addBilibiliPromptBtn.addEventListener('click', () => {
+    const val = bilibiliPromptInput.value.trim();
+    if(val) {
+      bilibiliPrompts.push({ text: val, strength: 5 });
+      bilibiliPromptInput.value = '';
+      renderPromptList(bilibiliPromptsList, bilibiliPrompts);
+    }
+  });
+
+  addZhihuPromptBtn.addEventListener('click', () => {
+    const val = zhihuPromptInput.value.trim();
+    if(val) {
+      zhihuPrompts.push({ text: val, strength: 5 });
+      zhihuPromptInput.value = '';
+      renderPromptList(zhihuPromptsList, zhihuPrompts);
+    }
+  });
+
+  // Render prompt lists with handlers to update strengths and remove
+  function renderPromptList(container, promptArray) {
+    container.innerHTML = '';
+    promptArray.forEach((p, i) => {
+      const promptItem = createPromptItem(
+        p.text,
+        p.strength,
+        (val) => {
+          p.strength = Number(val);
+        },
+        () => {
+          promptArray.splice(i, 1);
+          renderPromptList(container, promptArray);
+        }
+      );
+      container.appendChild(promptItem.container);
+    });
+  }
+
+  // Load all saved settings
+  function loadAllSettings() {
+    const data = loadSettings();
+    if (!data) return;
+
+    // Global
+    prompts = data.global?.prompts || [];
+    renderPromptList(globalPromptsList, prompts);
+    globalStrength.value = data.global?.strength ?? 5;
+    globalStrengthValue.textContent = globalStrength.value;
+    setPresetCheckboxValues(globalPresetFilters, data.global?.presets || []);
+
+    // Bilibili
+    bilibiliPrompts = data.bilibili?.prompts || [];
+    renderPromptList(bilibiliPromptsList, bilibiliPrompts);
+    enableBilibili.checked = data.bilibili?.enabled ?? false;
+    setPresetCheckboxValues(bilibiliPresetFilters, data.bilibili?.presets || []);
+
+    // Zhihu
+    zhihuPrompts = data.zhihu?.prompts || [];
+    renderPromptList(zhihuPromptsList, zhihuPrompts);
+    enableZhihu.checked = data.zhihu?.enabled ?? false;
+    setPresetCheckboxValues(zhihuPresetFilters, data.zhihu?.presets || []);
+
+    // Advanced
+    apiKeyInput.value = data.advanced?.apiKey || '';
+
+    // 默认收起平台内容
+    if(bilibiliContent.classList.contains('expanded')) {
+      bilibiliHeader.click();
+    }
+    if(zhihuContent.classList.contains('expanded')) {
+      zhihuHeader.click();
+    }
+
+    // 高级设置默认折叠
+    if(advancedSection.classList.contains('visible')) {
+      toggleAdvancedBtn.click();
+    }
+  }
+
+  // Save button
+  saveBtn.addEventListener('click', () => {
+    saveSettings();
+  });
+
+  // On load check if agreed, else show disclaimer
+  window.addEventListener('load', () => {
+    const data = loadSettings();
+    if (data?.agreed) {
+      disclaimerOverlay.style.display = 'none';
+      mainContainer.classList.remove('hidden');
+      loadAllSettings();
+    }
+  });
+})();
