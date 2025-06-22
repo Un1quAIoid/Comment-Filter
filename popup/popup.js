@@ -99,19 +99,16 @@
         apiKey: apiKeyInput.value.trim(),
       }
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    alert('设置已保存');
+    chrome.storage.local.set({ [STORAGE_KEY] : data }, () => { alert('设置已保存'); });
   }
 
   // Load settings from localStorage
   function loadSettings() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
+    return new Promise(resolve => {
+      chrome.storage.local.get({ [STORAGE_KEY] : null }, (raw) => {
+        resolve(raw);
+      })
+    });
   }
 
   // Helper to get preset checkboxes checked values (array)
@@ -177,10 +174,10 @@
   const zhihuToggleIcon = document.getElementById('zhihuToggle');
 
   // Disclaimer agree button
-  agreeBtn.addEventListener('click', () => {
+  agreeBtn.addEventListener('click', async () => {
     disclaimerOverlay.style.display = 'none';
     mainContainer.classList.remove('hidden');
-    loadAllSettings();
+    await loadAllSettings();
   });
 
   // Range value update handlers
@@ -271,8 +268,9 @@
   }
 
   // Load all saved settings
-  function loadAllSettings() {
-    const data = loadSettings();
+  async function loadAllSettings() {
+    const raw = await loadSettings();
+    const data = raw?.[STORAGE_KEY];
     if (!data) return;
 
     // Global
@@ -317,8 +315,9 @@
   });
 
   // On load check if agreed, else show disclaimer
-  window.addEventListener('load', () => {
-    const data = loadSettings();
+  window.addEventListener('load', async () => {
+    const raw = await loadSettings();
+    const data = raw?.[STORAGE_KEY];
     if (data?.agreed) {
       disclaimerOverlay.style.display = 'none';
       mainContainer.classList.remove('hidden');
