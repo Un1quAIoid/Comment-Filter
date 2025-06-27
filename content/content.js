@@ -203,8 +203,8 @@ function Filter() {
     if (content in this.result) {
       return this.result[content];
     } else {
-      let setting = await loadSettings();
-      setting = setting[STORAGE_KEY];
+      const raw = await loadSettings();
+      const setting = raw?.[STORAGE_KEY];
 
       const messages = get_system_prompt(setting);
 
@@ -234,10 +234,10 @@ function Filter() {
 
         const json = await res.json();
         answer = json.choices?.[0]?.message?.content?.trim();
-        this.result[content] = answer;
         tot_time = tot_time + 1;
       } while (answer !== "YES" && answer !== "NO");
-
+      
+      this.result[content] = answer;
       format_correct_time = format_correct_time + 1;
       console.log(format_correct_time, tot_time, content, answer);
       return answer;
@@ -274,26 +274,52 @@ async function startWatchingComments() {
         tot_length += content.length;
         // maskComment(comment);
         if (window.location.hostname === 'www.bilibili.com') {
+          let key_fl = false;
+          for (let w of setting.bilibili.keywords) {
+            if (content.includes(w.text)) {
+              key_fl = true;
+              break;
+            }
+          }
+
+          if (key_fl) {
+            maskComment(comment);
+            continue;
+          }
+
           if (comment.tagName === "BILI-COMMENT-RENDERER") {
             lst = content;
             if (!(content in process_memory)) {
               process_memory[content] = new Filter();
               const block = await process_memory[content].add(content);
-              if (block === "YES") maskComment(comment);
+              if ((block === "YES")) maskComment(comment);
             }
           }
           else {
             const block = await process_memory[lst].add(content);
-            if (block === "YES") maskComment(comment);
+            if ((block === "YES")) maskComment(comment);
           }
         }
         else if (window.location.hostname === 'www.zhihu.com') {
+          let key_fl = false;
+          for (let w of setting.zhihu.keywords) {
+            if (content.includes(w.text)) {
+              key_fl = true;
+              break;
+            }
+          }
+
+          if (key_fl) {
+            comment.style.display = "none";
+            continue;
+          }
+
           const autherName = comment.querySelector(".AuthorInfo [itemprop='name']").getAttribute("content");
           if (!(autherName in process_memory)) {
             const block = await zhihuFilter.add(content);
             process_memory[autherName] = block;
             // console.log(autherName, block);
-            if (block === "YES") {
+            if ((block === "YES")) {
               comment.style.display = "none";
             }
           }

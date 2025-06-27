@@ -55,32 +55,14 @@
     return { container, inputRange };
   }
 
-  function createKeywordItem(text, value, onChange, onRemove) {
+  function createKeywordItem(text, onRemove) {
     const container = document.createElement('div');
-    container.className = 'keyword-item';  // 与 prompt-item 区别在这里
+    container.className = 'keyword-item';
 
     const promptText = document.createElement('div');
-    promptText.className = 'prompt-text'; // 样式复用
+    promptText.className = 'prompt-text';
     promptText.textContent = text;
     container.appendChild(promptText);
-
-    const inputRange = document.createElement('input');
-    inputRange.type = 'range';
-    inputRange.min = '0';
-    inputRange.max = '10';
-    inputRange.value = value ?? 5;
-    inputRange.className = 'prompt-range';
-    container.appendChild(inputRange);
-
-    const rangeValue = document.createElement('span');
-    rangeValue.className = 'range-value';
-    rangeValue.textContent = inputRange.value;
-    container.appendChild(rangeValue);
-
-    inputRange.addEventListener('input', () => {
-      rangeValue.textContent = inputRange.value;
-      onChange && onChange(inputRange.value);
-    });
 
     const removeBtn = document.createElement('button');
     removeBtn.className = 'prompt-remove-btn';
@@ -93,7 +75,7 @@
       container.remove();
     });
 
-    return { container, inputRange };
+    return container;
   }
 
 
@@ -122,16 +104,12 @@
     keywordArray.forEach((k, i) => {
       const keywordItem = createKeywordItem(
         k.text,
-        k.strength,
-        (val) => {
-          k.strength = Number(val);
-        },
         () => {
           keywordArray.splice(i, 1);
           renderKeywordList(container, keywordArray);
         }
       );
-      container.appendChild(keywordItem.container);
+      container.appendChild(keywordItem);
     });
   }
 
@@ -343,7 +321,7 @@
   addBilibiliKeywordBtn.addEventListener('click', () => {
     const val = bilibiliKeywordInput.value.trim();
     if(val) {
-      bilibiliKeywords.push({ text: val, strength: 5 });
+      bilibiliKeywords.push({ text: val });
       bilibiliKeywordInput.value = '';
       renderKeywordList(bilibiliKeywordsList, bilibiliKeywords);
     }
@@ -352,7 +330,7 @@
   addZhihuKeywordBtn.addEventListener('click', () => {
     const val = zhihuKeywordInput.value.trim();
     if(val) {
-      zhihuKeywords.push({ text: val, strength: 5 });
+      zhihuKeywords.push({ text: val });
       zhihuKeywordInput.value = '';
       renderKeywordList(zhihuKeywordsList, zhihuKeywords);
     }
