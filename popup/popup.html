@@ -28,6 +28,10 @@
       font-weight: 700;
       color: #111;
     }
+    h4 {
+      margin: 18px 0 8px 0;
+      font-weight: 700;
+    }
     label {
       font-weight: 600;
       display: block;
@@ -128,13 +132,25 @@
     }
     /* prompt条目 */
     .prompt-item {
-      background-color: #e0e7ff;
+      background-color: #e0e7ff; /* 蓝色背景 */
       border-radius: 14px;
       padding: 6px 12px;
       margin-bottom: 12px;
       font-size: 13px;
       color: #1e293b;
       box-shadow: 0 1px 3px rgb(59 130 246 / 0.3);
+      position: relative;
+      user-select: text;
+    }
+    /* keyword条目 */
+    .keyword-item {
+      background-color: #d1fae5; /* 绿色背景 */
+      border-radius: 14px;
+      padding: 6px 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: #065f46;
+      box-shadow: 0 1px 3px rgb(5 150 105 / 0.3);
       position: relative;
       user-select: text;
     }
@@ -152,10 +168,10 @@
       right: 12px;
       top: 36px;
       font-weight: 700;
-      color: #2563eb;
       user-select: none;
       font-size: 12px;
     }
+    /* prompt 删除按钮 */
     .prompt-remove-btn {
       position: absolute;
       top: 6px;
@@ -170,12 +186,9 @@
       cursor: pointer;
       user-select: none;
       transition: background-color 0.2s ease;
-
-      /* 新增：使内容居中 */
       display: flex;
       justify-content: center;
       align-items: center;
-
       font-size: 14px;
       text-align: center;
       padding: 0;
@@ -184,7 +197,7 @@
     .prompt-remove-btn:hover {
       background-color: #b91c1c;
     }
-    /* 添加新prompt */
+    /* 添加新prompt/keyword */
     .add-prompt-group {
       display: flex;
       margin-bottom: 10px;
@@ -203,6 +216,7 @@
       font-size: 13px;
       width: 80px;
       padding: 6px 0;
+      user-select: none;
     }
     .add-prompt-group button:hover {
       background-color: #2563eb;
@@ -290,6 +304,8 @@
     <!-- 全局设置 -->
     <div id="globalSettings">
       <h3>全局设置</h3>
+
+      <!-- prompt 设置 -->
       <div class="add-prompt-group">
         <input type="text" id="globalPromptInput" placeholder="输入prompt后点击添加" />
         <button id="addGlobalPromptBtn">添加</button>
@@ -304,6 +320,14 @@
         <label><input type="checkbox" value="blockFlame" /> 屏蔽引战言论</label>
         <label><input type="checkbox" value="blockNonsense" /> 屏蔽无意义评论</label>
       </div>
+
+      <!-- keyword 设置 -->
+      <h4 style="color:#047857;">关键词设置</h4>
+      <div class="add-prompt-group">
+        <input type="text" id="globalKeywordInput" placeholder="输入关键词后点击添加" />
+        <button id="addGlobalKeywordBtn">添加关键词</button>
+      </div>
+      <div id="globalKeywordsList"></div>
     </div>
 
     <!-- B站平台 -->
@@ -315,17 +339,25 @@
       <div class="platform-content" id="bilibiliContent" aria-hidden="true">
         <label><input type="checkbox" id="enableBilibili" /> 启用 B站 筛选</label>
 
+        <!-- prompt 设置 -->
         <div class="add-prompt-group">
           <input type="text" id="bilibiliPromptInput" placeholder="输入prompt后点击添加" />
           <button id="addBilibiliPromptBtn">添加</button>
         </div>
         <div id="bilibiliPromptsList"></div>
-
         <div class="preset-filters" id="bilibiliPresetFilters">
           <label><input type="checkbox" value="blockAds" /> 屏蔽广告</label>
           <label><input type="checkbox" value="blockFlame" /> 屏蔽引战言论</label>
           <label><input type="checkbox" value="blockNonsense" /> 屏蔽无意义评论</label>
         </div>
+
+        <!-- keyword 设置 -->
+        <h4 style="color:#047857;">关键词设置</h4>
+        <div class="add-prompt-group">
+          <input type="text" id="bilibiliKeywordInput" placeholder="输入关键词后点击添加" />
+          <button id="addBilibiliKeywordBtn">添加关键词</button>
+        </div>
+        <div id="bilibiliKeywordsList"></div>
       </div>
     </div>
 
@@ -338,17 +370,25 @@
       <div class="platform-content" id="zhihuContent" aria-hidden="true">
         <label><input type="checkbox" id="enableZhihu" /> 启用 知乎 筛选</label>
 
+        <!-- prompt 设置 -->
         <div class="add-prompt-group">
           <input type="text" id="zhihuPromptInput" placeholder="输入prompt后点击添加" />
           <button id="addZhihuPromptBtn">添加</button>
         </div>
         <div id="zhihuPromptsList"></div>
-
         <div class="preset-filters" id="zhihuPresetFilters">
           <label><input type="checkbox" value="blockAds" /> 屏蔽广告</label>
           <label><input type="checkbox" value="blockFlame" /> 屏蔽引战言论</label>
           <label><input type="checkbox" value="blockNonsense" /> 屏蔽无意义评论</label>
         </div>
+
+        <!-- keyword 设置 -->
+        <h4 style="color:#047857;">关键词设置</h4>
+        <div class="add-prompt-group">
+          <input type="text" id="zhihuKeywordInput" placeholder="输入关键词后点击添加" />
+          <button id="addZhihuKeywordBtn">添加关键词</button>
+        </div>
+        <div id="zhihuKeywordsList"></div>
       </div>
     </div>
 

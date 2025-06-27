@@ -55,6 +55,48 @@
     return { container, inputRange };
   }
 
+  function createKeywordItem(text, value, onChange, onRemove) {
+    const container = document.createElement('div');
+    container.className = 'keyword-item';  // 与 prompt-item 区别在这里
+
+    const promptText = document.createElement('div');
+    promptText.className = 'prompt-text'; // 样式复用
+    promptText.textContent = text;
+    container.appendChild(promptText);
+
+    const inputRange = document.createElement('input');
+    inputRange.type = 'range';
+    inputRange.min = '0';
+    inputRange.max = '10';
+    inputRange.value = value ?? 5;
+    inputRange.className = 'prompt-range';
+    container.appendChild(inputRange);
+
+    const rangeValue = document.createElement('span');
+    rangeValue.className = 'range-value';
+    rangeValue.textContent = inputRange.value;
+    container.appendChild(rangeValue);
+
+    inputRange.addEventListener('input', () => {
+      rangeValue.textContent = inputRange.value;
+      onChange && onChange(inputRange.value);
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'prompt-remove-btn';
+    removeBtn.title = '删除该关键词';
+    removeBtn.textContent = '×';
+    container.appendChild(removeBtn);
+
+    removeBtn.addEventListener('click', () => {
+      onRemove && onRemove();
+      container.remove();
+    });
+
+    return { container, inputRange };
+  }
+
+
   // Render prompt list inside container
   function renderPromptList(container, prompts, onChangeStrength, onRemovePrompt) {
     container.innerHTML = '';
@@ -75,6 +117,25 @@
     }
   }
 
+  function renderKeywordList(container, keywordArray) {
+    container.innerHTML = '';
+    keywordArray.forEach((k, i) => {
+      const keywordItem = createKeywordItem(
+        k.text,
+        k.strength,
+        (val) => {
+          k.strength = Number(val);
+        },
+        () => {
+          keywordArray.splice(i, 1);
+          renderKeywordList(container, keywordArray);
+        }
+      );
+      container.appendChild(keywordItem.container);
+    });
+  }
+
+
   // Save all settings to localStorage
   function saveSettings() {
     const data = {
@@ -82,23 +143,27 @@
       global: {
         enabled: true,
         prompts,
+        keywords: globalKeywords,
         strength: Number(globalStrength.value),
         presets: getPresetCheckboxValues(globalPresetFilters),
       },
       bilibili: {
         enabled: enableBilibili.checked,
         prompts: bilibiliPrompts,
+        keywords: bilibiliKeywords,
         presets: getPresetCheckboxValues(bilibiliPresetFilters),
       },
       zhihu: {
         enabled: enableZhihu.checked,
         prompts: zhihuPrompts,
+        keywords: zhihuKeywords,
         presets: getPresetCheckboxValues(zhihuPresetFilters),
       },
       advanced: {
         apiKey: apiKeyInput.value.trim(),
       }
     };
+
     chrome.storage.local.set({ [STORAGE_KEY] : data }, () => { alert('设置已保存'); });
   }
 
@@ -134,6 +199,10 @@
   let prompts = [];
   let bilibiliPrompts = [];
   let zhihuPrompts = [];
+
+  let globalKeywords = [];
+  let bilibiliKeywords = [];
+  let zhihuKeywords = [];
 
   // Get UI elements
   const globalPromptInput = document.getElementById('globalPromptInput');
@@ -172,6 +241,20 @@
   const zhihuHeader = zhihuBlock.querySelector('.platform-header');
   const zhihuContent = document.getElementById('zhihuContent');
   const zhihuToggleIcon = document.getElementById('zhihuToggle');
+
+  //keyword
+  const globalKeywordInput = document.getElementById('globalKeywordInput');
+  const addGlobalKeywordBtn = document.getElementById('addGlobalKeywordBtn');
+  const globalKeywordsList = document.getElementById('globalKeywordsList');
+
+  const bilibiliKeywordInput = document.getElementById('bilibiliKeywordInput');
+  const addBilibiliKeywordBtn = document.getElementById('addBilibiliKeywordBtn');
+  const bilibiliKeywordsList = document.getElementById('bilibiliKeywordsList');
+
+  const zhihuKeywordInput = document.getElementById('zhihuKeywordInput');
+  const addZhihuKeywordBtn = document.getElementById('addZhihuKeywordBtn');
+  const zhihuKeywordsList = document.getElementById('zhihuKeywordsList');
+
 
   // Disclaimer agree button
   agreeBtn.addEventListener('click', async () => {
@@ -248,6 +331,34 @@
     }
   });
 
+  addGlobalKeywordBtn.addEventListener('click', () => {
+    const val = globalKeywordInput.value.trim();
+    if(val) {
+      globalKeywords.push({ text: val, strength: 5 });
+      globalKeywordInput.value = '';
+      renderKeywordList(globalKeywordsList, globalKeywords);
+    }
+  });
+
+  addBilibiliKeywordBtn.addEventListener('click', () => {
+    const val = bilibiliKeywordInput.value.trim();
+    if(val) {
+      bilibiliKeywords.push({ text: val, strength: 5 });
+      bilibiliKeywordInput.value = '';
+      renderKeywordList(bilibiliKeywordsList, bilibiliKeywords);
+    }
+  });
+
+  addZhihuKeywordBtn.addEventListener('click', () => {
+    const val = zhihuKeywordInput.value.trim();
+    if(val) {
+      zhihuKeywords.push({ text: val, strength: 5 });
+      zhihuKeywordInput.value = '';
+      renderKeywordList(zhihuKeywordsList, zhihuKeywords);
+    }
+  });
+
+
   // Render prompt lists with handlers to update strengths and remove
   function renderPromptList(container, promptArray) {
     container.innerHTML = '';
@@ -291,6 +402,17 @@
     renderPromptList(zhihuPromptsList, zhihuPrompts);
     enableZhihu.checked = data.zhihu?.enabled ?? false;
     setPresetCheckboxValues(zhihuPresetFilters, data.zhihu?.presets || []);
+    
+    //keyword
+    globalKeywords = data.global?.keywords || [];
+    renderKeywordList(globalKeywordsList, globalKeywords);
+
+    bilibiliKeywords = data.bilibili?.keywords || [];
+    renderKeywordList(bilibiliKeywordsList, bilibiliKeywords);
+
+    zhihuKeywords = data.zhihu?.keywords || [];
+    renderKeywordList(zhihuKeywordsList, zhihuKeywords);
+
 
     // Advanced
     apiKeyInput.value = data.advanced?.apiKey || '';
